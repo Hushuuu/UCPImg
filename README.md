@@ -1,11 +1,14 @@
 # UCPImg
 
-##支援
-1.剪貼簿圖片暫時管理
-2.即時上傳imgur且可刪除
+##支援  
+ 
+1.剪貼簿圖片暫時管理  
+2.即時上傳imgur且可刪除  
 
-#設定
-`App.config`
+#設定  
+
+development `App.config`  
+portable `UCPic.dll.config`
 
 設定imgur 的ClientId
 
