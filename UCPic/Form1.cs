@@ -84,6 +84,7 @@ namespace UCPic
             if (listView1.SelectedIndices.Count > 0)
             {
                 var selectIndex = this.listView1.SelectedIndices[0];
+                this.pictureBox1.Image?.Dispose();
                 this.pictureBox1.Image = CommonHelpers.Base64StringToImage(imageList[selectIndex].img_base64);
                 linkLabel1.Text = imageList[selectIndex].upload_url;
                 nowIndex = selectIndex;
@@ -100,7 +101,8 @@ namespace UCPic
             {
                 var index = listView1.SelectedIndices[0];
                 DelApiFunc(index);
-                pictureBox1.Image = null;
+                linkLabel1.Text = string.Empty;
+                pictureBox1.Image?.Dispose();
                 imageList.RemoveAt(index);
                 listView1.Items[index].Remove();
                 if (listView1.Items.Count > index)
@@ -183,7 +185,7 @@ namespace UCPic
         //本地載入
         private void button6_Click(object sender, EventArgs e)
         {
-            pictureBox1.Image = null;
+            pictureBox1.Image?.Dispose();
             LoadLocal();
         }
         //本地存檔
@@ -198,7 +200,7 @@ namespace UCPic
                 {
                     Directory.CreateDirectory(local_imglist_json_backfolder);
                 }
-                var backfile_path = local_imglist_json_backfolder + "/" + DateTime.Now.ToString("HHmmss") + ".json";
+                var backfile_path = local_imglist_json_backfolder + "/" + DateTime.Now.ToString("yyyyMMddHHmmss") + ".json";
                 File.WriteAllText(backfile_path, json);
                 MessageBox.Show("本地存檔&備份成功");
             }
@@ -227,7 +229,7 @@ namespace UCPic
         private void pictureBox1_DoubleClick(object sender, EventArgs e)
         {
             var f = new ImgViewForm(pictureBox1.Image);
-            f.Show();
+            f.ShowDialog();
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
@@ -269,6 +271,12 @@ namespace UCPic
                     MessageBox.Show(ex.Message);
                 }
             }
+        }
+
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            linkLabel1.LinkVisited = true;
+            Process.Start(new ProcessStartInfo { FileName = ((LinkLabel)sender).Text, UseShellExecute = true });
         }
     }
 

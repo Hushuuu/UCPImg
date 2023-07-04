@@ -32,4 +32,13 @@ portable `UCPic.dll.config`
 固定載入根目錄下`/local_images_save.json`之檔案  
 可以將備份檔更名覆蓋後載入  
 
+#api limit注意事項  
+
+每個應用程序每天可允許約`1250`次上傳  
+或每天約`12500`次請求  
+如果在一個月內觸及每日限額五次  
+該應用程序將在該月的其餘時間內被封鎖  
+剩餘的信用額度將隨著每個請求的響應  
+在`X-RateLimit-ClientRemaining HTTP header`中顯示
+
 
