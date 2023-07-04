@@ -15,6 +15,7 @@ portable `UCPic.dll.config`
 ```xml
 <add key="imgur_client_id" value="xxxxxxxxx"/>
 ```
+[建立imgur帳號](https://medium.com/front-end-augustus-study-notes/imgur-api-3a41f2848bb8)
 
 #使用
 

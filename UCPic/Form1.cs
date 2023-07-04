@@ -152,7 +152,7 @@ namespace UCPic
                 // 檢查回應狀態碼
                 if (response.IsSuccessStatusCode)
                 {
-                    Console.WriteLine("檔案上傳成功。");
+                    MessageBox.Show("上傳成功");
                     var res_str = await response.Content.ReadAsStringAsync();
                     var res_obj = JsonSerializer.Deserialize<ImgurUploadRetClass>(res_str);
                     linkLabel1.Text = res_obj.data.link;
@@ -161,7 +161,6 @@ namespace UCPic
                 }
                 else
                 {
-                    Console.WriteLine("檔案上傳失敗。");
                     var res_str = await response.Content.ReadAsStringAsync();
                     MessageBox.Show(res_str);
                 }
