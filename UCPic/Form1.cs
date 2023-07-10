@@ -36,6 +36,8 @@ namespace UCPic
             listView1.Columns.Add("描述", 170);
             listView1.LabelEdit = true;
             linkLabel1.Text = string.Empty;
+            textBox1.Text = imgur_client_id;
+            textBox1.Visible = false;
 
         }
         //貼上圖片
@@ -60,7 +62,7 @@ namespace UCPic
             }
             else
             {
-                MessageBox.Show("剪貼簿目前沒有圖片");
+                //MessageBox.Show("剪貼簿目前沒有圖片");
             }
         }
         /// <summary>
@@ -131,6 +133,11 @@ namespace UCPic
                     MessageBox.Show("已經上傳過了");
                     return;
                 }
+                if(textBox1.Text.Length == 0)
+                {
+                    MessageBox.Show("沒有設定imgur client id");
+                    return;
+                }
 
                 using var httpClient = new HttpClient();
                 using var form = new MultipartFormDataContent();
@@ -146,7 +153,7 @@ namespace UCPic
                 */
 
                 // 設置Bearer授權標頭
-                httpClient.DefaultRequestHeaders.Add("Authorization", "Client-ID " + imgur_client_id);
+                httpClient.DefaultRequestHeaders.Add("Authorization", "Client-ID " + textBox1.Text);
                 form.Add(new StringContent(CommonHelpers.ImageToBase64(pictureBox1.Image, ImageFormat.Jpeg)), "image");
 
                 // 呼叫API並傳送表單數據
@@ -261,7 +268,7 @@ namespace UCPic
                     var url = string.Format(api_del_url, obj.deletehash);
                     using var client = new HttpClient();
                     using var request = new HttpRequestMessage(HttpMethod.Delete, url);
-                    request.Headers.Add("Authorization", "Client-ID " + imgur_client_id);
+                    request.Headers.Add("Authorization", "Client-ID " + textBox1.Text);
                     var response = await client.SendAsync(request);
                     response.EnsureSuccessStatusCode();
                     var res_str = await response.Content.ReadAsStringAsync();
@@ -277,6 +284,11 @@ namespace UCPic
         {
             linkLabel1.LinkVisited = true;
             Process.Start(new ProcessStartInfo { FileName = ((LinkLabel)sender).Text, UseShellExecute = true });
+        }
+
+        private void button7_Click(object sender, EventArgs e)
+        {
+            textBox1.Visible = !textBox1.Visible;
         }
     }
 

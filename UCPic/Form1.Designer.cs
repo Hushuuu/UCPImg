@@ -40,6 +40,9 @@
             button6 = new Button();
             label2 = new Label();
             panel1 = new Panel();
+            button7 = new Button();
+            textBox1 = new TextBox();
+            label3 = new Label();
             ((System.ComponentModel.ISupportInitialize)pictureBox1).BeginInit();
             panel1.SuspendLayout();
             SuspendLayout();
@@ -163,11 +166,40 @@
             panel1.Size = new Size(702, 242);
             panel1.TabIndex = 11;
             // 
+            // button7
+            // 
+            button7.Location = new Point(99, 299);
+            button7.Name = "button7";
+            button7.Size = new Size(85, 29);
+            button7.TabIndex = 12;
+            button7.Text = "切換/顯示";
+            button7.UseVisualStyleBackColor = true;
+            button7.Click += button7_Click;
+            // 
+            // textBox1
+            // 
+            textBox1.Location = new Point(190, 299);
+            textBox1.Name = "textBox1";
+            textBox1.Size = new Size(204, 27);
+            textBox1.TabIndex = 13;
+            // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(23, 304);
+            label3.Name = "label3";
+            label3.Size = new Size(70, 19);
+            label3.TabIndex = 14;
+            label3.Text = "Client-ID";
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(9F, 19F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(719, 345);
+            Controls.Add(label3);
+            Controls.Add(textBox1);
+            Controls.Add(button7);
             Controls.Add(panel1);
             Controls.Add(label2);
             Controls.Add(button6);
@@ -202,5 +234,8 @@
         private Button button6;
         private Label label2;
         private Panel panel1;
+        private Button button7;
+        private TextBox textBox1;
+        private Label label3;
     }
 }
