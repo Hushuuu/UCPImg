@@ -1,5 +1,6 @@
 using System.Configuration;
 using System.Diagnostics;
+using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
@@ -15,11 +16,11 @@ namespace UCPic
     {
         private List<ImgViewClass> imageList = new();
         private int nowIndex = -1;
-        private string imgur_client_id = "";
-        private string api_upload_url = "";
-        private string api_del_url = "";
-        private string local_imglist_json_path = "local_images_save.json";
-        private string local_imglist_json_backfolder = "backup";
+        private string? imgur_client_id = "";
+        private string? api_upload_url = "";
+        private string? api_del_url = "";
+        private string? local_imglist_json_path = "local_images_save.json";
+        private string? local_imglist_json_backfolder = "backup";
 
         public Form1()
         {
@@ -28,6 +29,7 @@ namespace UCPic
             api_del_url = ConfigurationManager.AppSettings["api_del_url"];
 
             InitializeComponent();
+            this.AllowDrop = true; // 啟用拖曳功能
             pictureBox1.SizeMode = PictureBoxSizeMode.Zoom;
             listView1.View = View.Details;
             listView1.GridLines = true;
@@ -38,7 +40,6 @@ namespace UCPic
             linkLabel1.Text = string.Empty;
             textBox1.Text = imgur_client_id;
             textBox1.Visible = false;
-
         }
         //貼上圖片
         private void button1_Click(object sender, EventArgs e)
@@ -99,12 +100,12 @@ namespace UCPic
         //刪除
         private void button2_Click(object sender, EventArgs e)
         {
+            pictureBox1.Image = null;
             if (listView1.SelectedIndices.Count > 0)
             {
                 var index = listView1.SelectedIndices[0];
                 DelApiFunc(index);
                 linkLabel1.Text = string.Empty;
-                pictureBox1.Image?.Dispose();
                 imageList.RemoveAt(index);
                 listView1.Items[index].Remove();
                 if (listView1.Items.Count > index)
@@ -126,6 +127,7 @@ namespace UCPic
         //上傳
         private async void button3_Click(object sender, EventArgs e)
         {
+            button3.Enabled = false;
             if (nowIndex > -1)
             {
                 if (imageList[nowIndex].upload_url != null)
@@ -133,7 +135,7 @@ namespace UCPic
                     MessageBox.Show("已經上傳過了");
                     return;
                 }
-                if(textBox1.Text.Length == 0)
+                if (textBox1.Text.Length == 0)
                 {
                     MessageBox.Show("沒有設定imgur client id");
                     return;
@@ -154,7 +156,7 @@ namespace UCPic
 
                 // 設置Bearer授權標頭
                 httpClient.DefaultRequestHeaders.Add("Authorization", "Client-ID " + textBox1.Text);
-                form.Add(new StringContent(CommonHelpers.ImageToBase64(pictureBox1.Image, ImageFormat.Jpeg)), "image");
+                form.Add(new StringContent(imageList[nowIndex].img_base64), "image");
 
                 // 呼叫API並傳送表單數據
                 var response = await httpClient.PostAsync(api_upload_url, form);
@@ -164,9 +166,9 @@ namespace UCPic
                     MessageBox.Show("上傳成功");
                     var res_str = await response.Content.ReadAsStringAsync();
                     var res_obj = JsonSerializer.Deserialize<ImgurUploadRetClass>(res_str);
-                    linkLabel1.Text = res_obj.data.link;
-                    imageList[nowIndex].upload_url = res_obj.data.link;
-                    imageList[nowIndex].deletehash = res_obj.data.deletehash;
+                    linkLabel1.Text = res_obj?.data.link;
+                    imageList[nowIndex].upload_url = res_obj?.data.link;
+                    imageList[nowIndex].deletehash = res_obj?.data.deletehash;
                 }
                 else
                 {
@@ -178,6 +180,7 @@ namespace UCPic
             {
                 MessageBox.Show("目前無選擇圖片");
             }
+            button3.Enabled = true;
         }
         //複製網址
         private void button4_Click(object sender, EventArgs e)
@@ -289,6 +292,52 @@ namespace UCPic
         private void button7_Click(object sender, EventArgs e)
         {
             textBox1.Visible = !textBox1.Visible;
+        }
+
+        private void Form1_DragDrop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                string[] paths = (string[])e.Data.GetData(DataFormats.FileDrop);
+                string ext_str = Path.GetExtension(paths[0]);
+                var imgformat = ImageFormat.Jpeg;
+                using (Image sourceImg = Image.FromFile(paths[0]))
+                {
+                    if (ext_str.Contains("gif"))
+                    {
+                        imgformat = ImageFormat.Gif;
+                    }
+                    var imgstr64 = CommonHelpers.ImageToBase64(sourceImg, ImageFormat.Gif);
+                    Image clonedImg = new Bitmap(sourceImg.Width, sourceImg.Height, PixelFormat.Format32bppArgb);
+                    using (var copy = Graphics.FromImage(clonedImg))
+                    {
+                        copy.DrawImage(sourceImg, 0, 0);
+                    }
+                    pictureBox1.Image = clonedImg;
+                    var ins_serial = imageList.Count == 0 ? 1 : imageList.Select(z => z.serial).Max() + 1;
+                    var imageObj = new ImgViewClass
+                    {
+                        name = ins_serial.ToString(),
+                        serial = ins_serial,
+                        img_base64 = imgstr64
+                    };
+                    imageList.Add(imageObj);
+
+                    refreshShowList();
+                }
+            }
+        }
+
+        private void Form1_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effect = DragDropEffects.Copy;
+            }
+            else
+            {
+                e.Effect = DragDropEffects.None;
+            }
         }
     }
 

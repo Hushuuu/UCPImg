@@ -213,6 +213,8 @@
             KeyPreview = true;
             Name = "Form1";
             Text = "UCPImg";
+            DragDrop += Form1_DragDrop;
+            DragEnter += Form1_DragEnter;
             KeyDown += Form1_KeyDown;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             panel1.ResumeLayout(false);
