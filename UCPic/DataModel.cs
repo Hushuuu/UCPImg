@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace UCPic
 {
+    /// <summary>
+    /// 圖片清單
+    /// </summary>
     public class ImgViewClass
     {
         //序號
@@ -18,13 +21,23 @@ namespace UCPic
         public string? img_base64 { get; set; }
         //刪除所需hash
         public string? deletehash { get; set; }
+        /// <summary>
+        /// 副檔名(預設jpg)
+        /// </summary>
+        public string? ext_type { get; set; }
     }
+    /// <summary>
+    /// 上傳imgur回傳結果
+    /// </summary>
     public class ImgurUploadRetClass
     {
         public ImgurUploadRetData data { get; set; }
         public bool success { get; set; }
         public int status { get; set; }
     }
+    /// <summary>
+    /// 上傳imgur回傳結果Data
+    /// </summary>
     public class ImgurUploadRetData
     {
         public string id { get; set; }

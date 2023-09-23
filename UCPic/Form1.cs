@@ -9,12 +9,16 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Xml.Linq;
+using System.IO.Compression;
 
 namespace UCPic
 {
     public partial class Form1 : Form
     {
         private List<ImgViewClass> imageList = new();
+        /// <summary>
+        /// 目前FOCUS ImageList index
+        /// </summary>
         private int nowIndex = -1;
         private string? imgur_client_id = "";
         private string? api_upload_url = "";
@@ -27,6 +31,12 @@ namespace UCPic
             imgur_client_id = ConfigurationManager.AppSettings["imgur_client_id"];
             api_upload_url = ConfigurationManager.AppSettings["api_upload_url"];
             api_del_url = ConfigurationManager.AppSettings["api_del_url"];
+            if (ConfigurationManager.AppSettings["hide_client_keyin"] == "Y")
+            {
+                label3.Visible = false;
+                button7.Visible = false;
+                textBox1.Visible = false;
+            }
 
             InitializeComponent();
             this.AllowDrop = true; // 啟用拖曳功能
@@ -54,7 +64,8 @@ namespace UCPic
                 {
                     name = ins_serial.ToString(),
                     serial = ins_serial,
-                    img_base64 = CommonHelpers.ImageToBase64(img, ImageFormat.Jpeg)
+                    img_base64 = CommonHelpers.ImageToBase64(img, ImageFormat.Jpeg),
+                    ext_type = "jpg",
                 };
                 imageList.Add(imageObj);
 
@@ -88,7 +99,7 @@ namespace UCPic
             {
                 var selectIndex = this.listView1.SelectedIndices[0];
                 this.pictureBox1.Image?.Dispose();
-                this.pictureBox1.Image = CommonHelpers.Base64StringToImage(imageList[selectIndex].img_base64);
+                pictureBox1.Image = CommonHelpers.Base64StringToImage2(imageList[selectIndex].img_base64);
                 linkLabel1.Text = imageList[selectIndex].upload_url;
                 nowIndex = selectIndex;
             }
@@ -133,11 +144,13 @@ namespace UCPic
                 if (imageList[nowIndex].upload_url != null)
                 {
                     MessageBox.Show("已經上傳過了");
+                    button3.Enabled = true;
                     return;
                 }
                 if (textBox1.Text.Length == 0)
                 {
                     MessageBox.Show("沒有設定imgur client id");
+                    button3.Enabled = true;
                     return;
                 }
 
@@ -189,7 +202,7 @@ namespace UCPic
             {
                 Clipboard.Clear();
                 Clipboard.SetText(this.linkLabel1.Text);
-                MessageBox.Show("複製網址成功");
+                //MessageBox.Show("複製網址成功");
             }
         }
         //本地載入
@@ -238,7 +251,10 @@ namespace UCPic
         //放大打開圖片
         private void pictureBox1_DoubleClick(object sender, EventArgs e)
         {
-            var f = new ImgViewForm(pictureBox1.Image);
+            var obj = imageList[nowIndex];
+            if(obj == null)
+                return;
+            var f = new ImgViewForm(CommonHelpers.Base64StringToImage2(obj.img_base64));
             f.ShowDialog();
         }
 
@@ -260,7 +276,7 @@ namespace UCPic
             }
         }
 
-        //delete api
+        //delete api刪除
         private async void DelApiFunc(int index)
         {
             var obj = imageList[index];
@@ -282,7 +298,7 @@ namespace UCPic
                 }
             }
         }
-
+        //打開網址連結
         private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             linkLabel1.LinkVisited = true;
@@ -293,33 +309,36 @@ namespace UCPic
         {
             textBox1.Visible = !textBox1.Visible;
         }
-
+        #region 拖曳
         private void Form1_DragDrop(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
                 string[] paths = (string[])e.Data.GetData(DataFormats.FileDrop);
                 string ext_str = Path.GetExtension(paths[0]);
-                var imgformat = ImageFormat.Jpeg;
+                //var imgformat = ImageFormat.Jpeg;
                 using (Image sourceImg = Image.FromFile(paths[0]))
                 {
-                    if (ext_str.Contains("gif"))
-                    {
-                        imgformat = ImageFormat.Gif;
-                    }
-                    var imgstr64 = CommonHelpers.ImageToBase64(sourceImg, ImageFormat.Gif);
+                    var imgstr64 = string.Empty;
+                    //if (ext_str.Contains("gif"))
+                    //{
+                    //    imgformat = ImageFormat.Gif;                      
+                    //}
+                    imgstr64 = CommonHelpers.ImageToBase64(sourceImg, sourceImg.RawFormat);
                     Image clonedImg = new Bitmap(sourceImg.Width, sourceImg.Height, PixelFormat.Format32bppArgb);
                     using (var copy = Graphics.FromImage(clonedImg))
                     {
                         copy.DrawImage(sourceImg, 0, 0);
                     }
-                    pictureBox1.Image = clonedImg;
+                    pictureBox1.Image = CommonHelpers.Base64StringToImage2(imgstr64);
+
                     var ins_serial = imageList.Count == 0 ? 1 : imageList.Select(z => z.serial).Max() + 1;
                     var imageObj = new ImgViewClass
                     {
                         name = ins_serial.ToString(),
                         serial = ins_serial,
-                        img_base64 = imgstr64
+                        img_base64 = imgstr64,
+                        ext_type = ext_str.Contains("gif") ? "gif" : "jpg"
                     };
                     imageList.Add(imageObj);
 
@@ -338,6 +357,61 @@ namespace UCPic
             {
                 e.Effect = DragDropEffects.None;
             }
+        }
+        #endregion
+
+        #region 存成圖片檔案
+        private void btnSaveAlltoFile_Click(object sender, EventArgs e)
+        {
+            string tempDirectory = Path.Combine(Application.StartupPath, "TempImgFolder");
+            //刪除上次暫存資料夾
+            if (Directory.Exists(tempDirectory))
+            {
+                Directory.Delete(tempDirectory, true);
+            }
+            Directory.CreateDirectory(tempDirectory);
+            foreach (var imgView in imageList)
+            {
+                if (!string.IsNullOrEmpty(imgView.img_base64) && !string.IsNullOrEmpty(imgView.name))
+                {
+                    // 解码base64字符串并保存为文件
+                    byte[] imgBytes = Convert.FromBase64String(imgView.img_base64);
+                    string imgFileName = Path.Combine(tempDirectory, $"{imgView.name}.{imgView.ext_type}");
+                    File.WriteAllBytes(imgFileName, imgBytes);
+                }
+            }
+            // 压缩临时文件为ZIP
+            string zipFileName = Path.Combine(Application.StartupPath, $"圖片包{DateTime.Now.ToString("yyyyMMddHHmmss")}.zip");
+            ZipFile.CreateFromDirectory(tempDirectory, zipFileName);
+        }
+        #endregion
+
+        private void btnSaveToFile_Click(object sender, EventArgs e)
+        {
+
+            if (imageList[nowIndex] != null)
+            {
+                //var img = CommonHelpers.Base64StringToImage(imageList[nowIndex].img_base64);
+                var nowObj = imageList[nowIndex];
+                byte[] imgBytes = Convert.FromBase64String(nowObj.img_base64);
+
+                SaveFileDialog saveFileDialog1 = new SaveFileDialog();
+                saveFileDialog1.Filter = "All files (*.*)|*.*"; //JPeg Image|*.jpg|Bitmap Image|*.bmp|Gif Image|*.gif
+                saveFileDialog1.Title = "Save an Image File";
+                saveFileDialog1.ShowDialog();
+                // If the file name is not an empty string open it for saving.
+                if (saveFileDialog1.FileName != "")
+                {
+                    var fname = saveFileDialog1.FileName;
+                    var ftype = nowObj.ext_type;
+                    if (!fname.Contains("."))
+                    {
+                        fname += "." + ftype;
+                    }
+                    File.WriteAllBytes(fname, imgBytes);
+                }
+            }
+
         }
     }
 

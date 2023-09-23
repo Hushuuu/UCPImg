@@ -59,5 +59,13 @@ namespace UCPic
                 return base64String;
             }
         }
+
+        public static Image Base64StringToImage2(string base64String)
+        {
+            var byts = Convert.FromBase64String(base64String);
+            var ms = new MemoryStream(byts);
+            ms.Write(byts, 0, byts.Length);
+            return Image.FromStream(ms);
+        }
     }
 }
